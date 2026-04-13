@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="stack wide-gap">
+  <div class="grid two-up">
+    <article class="panel">
+      <div class="panel-header">
+        <p class="eyebrow">Project</p>
+        <h2>{{ snapshot.project.title }}</h2>
+      </div>
+      <dl class="detail-list">
+        <div>
+          <dt>Courseware formats</dt>
+          <dd>{{ snapshot.project.content_type_labels | join(", ") }}</dd>
+        </div>
+        <div>
+          <dt>Target level</dt>
+          <dd>{{ snapshot.project.target_level }}</dd>
+        </div>
+        <div>
+          <dt>Model class</dt>
+          <dd>{{ snapshot.project.model_class }}</dd>
+        </div>
+        <div>
+          <dt>Duration</dt>
+          <dd>{{ snapshot.project.duration_text }}</dd>
+        </div>
+        <div>
+          <dt>Status</dt>
+          <dd><span class="status-pill">{{ snapshot.project.status }}</span></dd>
+        </div>
+      </dl>
+      <div class="brief-box">
+        <h3>Brief</h3>
+        <pre>{{ snapshot.project.brief }}</pre>
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <p class="eyebrow">Source Material</p>
+        <h2>Uploaded files</h2>
+      </div>
+      {% if snapshot.source_files %}
+      <div class="source-list">
+        {% for source in snapshot.source_files %}
+        <div class="source-card">
+          <strong>{{ source.original_name }}</strong>
+          <span>{{ source.extraction_status }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="empty-state">No supporting files were uploaded for this project.</p>
+      {% endif %}
+    </article>
+  </div>
+
+  {% if snapshot.project.status in ["planning", "generating"] or snapshot.project.progress_message %}
+  <article class="panel progress-panel" data-project-id="{{ snapshot.project.id }}">
+    <div class="panel-header">
+      <p class="eyebrow">In Progress</p>
+      <h2>Working on your project</h2>
+    </div>
+    <p id="progress-message">{{ snapshot.project.progress_message or "Starting work." }}</p>
+    <div class="progress-track" aria-label="Project progress">
+      <div id="progress-fill" class="progress-fill" style="width: {{ snapshot.project.progress_percent }}%;"></div>
+    </div>
+    <div class="project-meta">
+      <span id="progress-phase" class="status-pill">{{ snapshot.project.progress_phase or snapshot.project.status }}</span>
+      <span id="progress-percent">{{ snapshot.project.progress_percent }}%</span>
+    </div>
+    <p class="muted">This page will refresh automatically when the current step finishes.</p>
+  </article>
+  {% endif %}
+
+  {% if not current_revision %}
+  <article class="panel">
+    <div class="panel-header">
+      <p class="eyebrow">Step 1</p>
+      <h2>Generate the first draft plan</h2>
+    </div>
+    <p class="muted">This creates the first editable courseware outline from the brief and supporting files.</p>
+    <form action="/projects/{{ snapshot.project.id }}/plan" method="post">
+      <button type="submit">Generate draft plan</button>
+    </form>
+  </article>
+  {% else %}
+  <article class="panel">
+    <div class="panel-header">
+      <p class="eyebrow">Current Draft</p>
+      <h2>Revision {{ current_revision.revision_number }}</h2>
+    </div>
+    <div class="grid two-up">
+      <div class="stack">
+        <h3>Generated plan text</h3>
+        <pre class="plan-output">{{ current_revision.agent_plan_text }}</pre>
+      </div>
+      <div class="stack">
+        <h3>Revision history</h3>
+        <div class="revision-list">
+          {% for revision in snapshot.revisions %}
+          <div class="revision-card {% if revision.id == current_revision.id %}active{% endif %}">
+            <strong>Revision {{ revision.revision_number }}</strong>
+            <span>{{ revision.status }}</span>
+            <small>{{ revision.created_at }}</small>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    {% if current_revision.status == "draft" %}
+    <form action="/projects/{{ snapshot.project.id }}/revisions/{{ current_revision.id }}/revise" method="post" class="stack wide-gap">
+      <label>
+        <span>Editable outline</span>
+        <textarea name="edited_outline" rows="18">{{ current_revision.editable_outline_text }}</textarea>
+      </label>
+      <label>
+        <span>Feedback for the next revision pass</span>
+        <textarea name="trainer_feedback" rows="6" placeholder="Optional feedback to guide the next iteration."></textarea>
+      </label>
+      <div class="action-row">
+        <button type="submit">Regenerate revision</button>
+      </div>
+    </form>
+
+    <form action="/projects/{{ snapshot.project.id }}/revisions/{{ current_revision.id }}/approve" method="post">
+      <button type="submit" class="secondary">Approve plan and generate files</button>
+    </form>
+    {% else %}
+    <div class="stack">
+      <h3>Approved outline snapshot</h3>
+      <pre class="plan-output">{{ current_revision.editable_outline_text }}</pre>
+      {% if current_revision.status in ["approved", "generation_failed"] %}
+      <form action="/projects/{{ snapshot.project.id }}/revisions/{{ current_revision.id }}/approve" method="post">
+        <button type="submit">Generate files from approved outline</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endif %}
+  </article>
+  {% endif %}
+
+  {% if snapshot.latest_artifact %}
+  <article class="panel">
+    <div class="panel-header">
+      <p class="eyebrow">Artifacts</p>
+      <h2>Download bundle</h2>
+    </div>
+    <p>{{ snapshot.latest_artifact.preview_metadata.summary }}</p>
+    <div class="artifact-preview">
+      {% for output in snapshot.latest_artifact.preview_metadata.outputs %}
+      <div class="artifact-output">
+        <p><strong>{{ content_type_labels[output.content_type] }}</strong></p>
+        {% if output.stack %}
+        <p><strong>Stack:</strong> {{ output.stack }}</p>
+        {% endif %}
+        <p>{{ output.summary }}</p>
+        <ul>
+          {% for file_name in output.files %}
+          <li>{{ file_name }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endfor %}
+    </div>
+    <a class="button-link" href="/projects/{{ snapshot.project.id }}/artifacts/{{ snapshot.latest_artifact.id }}/download">
+      Download zip bundle
+    </a>
+  </article>
+  {% endif %}
+</section>
+
+{% if snapshot.project.status in ["planning", "generating"] or snapshot.project.progress_message %}
+<script>
+  (() => {
+    const projectId = "{{ snapshot.project.id }}";
+    const progressFill = document.getElementById("progress-fill");
+    const progressMessage = document.getElementById("progress-message");
+    const progressPhase = document.getElementById("progress-phase");
+    const progressPercent = document.getElementById("progress-percent");
+    const activeStates = new Set(["planning", "generating"]);
+
+    const poll = async () => {
+      const response = await fetch(`/projects/${projectId}/status`, { headers: { "Accept": "application/json" } });
+      if (!response.ok) {
+        return;
+      }
+      const data = await response.json();
+      if (progressFill) {
+        progressFill.style.width = `${data.progress_percent || 0}%`;
+      }
+      if (progressMessage) {
+        progressMessage.textContent = data.progress_message || "Working on your project.";
+      }
+      if (progressPhase) {
+        progressPhase.textContent = data.progress_phase || data.status;
+      }
+      if (progressPercent) {
+        progressPercent.textContent = `${data.progress_percent || 0}%`;
+      }
+      if (!activeStates.has(data.status)) {
+        window.location.reload();
+      } else {
+        window.setTimeout(poll, 1500);
+      }
+    };
+
+    window.setTimeout(poll, 1200);
+  })();
+</script>
+{% endif %}
+{% endblock %}

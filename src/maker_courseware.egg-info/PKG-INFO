@@ -1,0 +1,60 @@
+Metadata-Version: 2.4
+Name: maker-courseware
+Version: 0.1.0
+Summary: Local courseware generator driven by OpenAI Agents.
+Author: Codex
+License: MIT
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: beautifulsoup4<5,>=4.12
+Requires-Dist: fastapi<1,>=0.115
+Requires-Dist: jinja2<4,>=3.1
+Requires-Dist: openai-agents<1,>=0.2
+Requires-Dist: pypdf<6,>=5
+Requires-Dist: python-docx<2,>=1.1
+Requires-Dist: python-multipart<1,>=0.0.9
+Requires-Dist: python-pptx<1,>=0.6.23
+Requires-Dist: uvicorn<1,>=0.30
+Provides-Extra: dev
+Requires-Dist: httpx<1,>=0.27; extra == "dev"
+Requires-Dist: pytest<9,>=8; extra == "dev"
+
+# Maker Courseware
+
+Maker Courseware is a local, CLI-launched web application that helps trainers turn a course brief plus supporting documents into draft plans and final teaching assets.
+
+## MVP Features
+
+- Create projects with a brief, target level, duration, and supporting files.
+- Accept supporting uploads in `pdf`, `docx`, `pptx`, `txt`, `md`, `html`, and `zip`.
+- Generate a draft courseware plan using the OpenAI Agents SDK.
+- Revise the plan with direct outline edits and trainer feedback.
+- Approve a revision and generate final files for:
+  - Jupyter notebook demonstration
+  - Jupyter notebook exercise
+  - Sample software project
+- Persist projects, revisions, uploads, and generated bundles locally with SQLite and filesystem storage.
+
+## Requirements
+
+- Python 3.11+
+- `OPENAI_API_KEY` set in the environment
+
+Optional model overrides:
+
+- `MAKER_PLAN_MODEL`
+- `MAKER_REVISION_MODEL`
+- `MAKER_GENERATION_MODEL`
+- `MAKER_DATA_DIR`
+- `MAKER_HOST`
+- `MAKER_PORT`
+
+## Run
+
+```bash
+uv sync
+uv run maker serve
+```
+
+The app stores local state inside `.maker-data/` by default.
+

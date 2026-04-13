@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="grid two-up">
+  <article class="panel form-panel">
+    <div class="panel-header">
+      <p class="eyebrow">New Project</p>
+      <h2>Create courseware</h2>
+    </div>
+    <form action="/projects" method="post" enctype="multipart/form-data" class="stack">
+      <label>
+        <span>Project title</span>
+        <input type="text" name="title" placeholder="Optional. We can derive it from the brief." />
+      </label>
+
+      <label>
+        <span>Courseware formats</span>
+        <div class="checkbox-group">
+          {% for value, label in content_types %}
+          <label class="checkbox-card">
+            <input type="checkbox" name="content_types" value="{{ value }}" />
+            <span>{{ label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </label>
+
+      <label>
+        <span>Target level</span>
+        <select name="target_level" required>
+          {% for level in target_levels %}
+          <option value="{{ level }}">{{ level }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>
+        <span>Model class</span>
+        <select name="model_class" required>
+          {% for value, label in model_classes %}
+          <option value="{{ value }}" {% if value == "5.4" %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <small>Choose the exact model family alias. Mini and nano variants are shown where the current API docs list them.</small>
+      </label>
+
+      <label>
+        <span>Duration</span>
+        <input type="text" name="duration_text" placeholder="e.g. 90 minutes, half day, 2 lab sessions" />
+      </label>
+
+      <label>
+        <span>Brief</span>
+        <textarea name="brief" rows="12" required placeholder="Describe the topic, audience, learning goals, constraints, and anything the agents should emphasize."></textarea>
+      </label>
+
+      <label>
+        <span>Supporting files</span>
+        <input type="file" name="supporting_files" multiple />
+        <small>Supported: {{ supported_uploads }}</small>
+      </label>
+
+      <button type="submit">Create project</button>
+    </form>
+  </article>
+
+  <article class="panel">
+    <div class="panel-header">
+      <p class="eyebrow">Saved Work</p>
+      <h2>Local projects</h2>
+    </div>
+    {% if projects %}
+    <div class="project-list">
+      {% for project in projects %}
+      <a class="project-card" href="/projects/{{ project.id }}">
+        <div class="project-meta">
+          <span class="status-pill">{{ project.status }}</span>
+          <span>{{ project.content_type_labels | join(", ") }}</span>
+        </div>
+        <h3>{{ project.title }}</h3>
+        <p>{{ project.target_level }} | {{ project.duration_text }} | {{ project.model_class }}</p>
+        <p class="muted">{{ project.updated_at }}</p>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty-state">No projects yet. Create the first one from the form on the left.</p>
+    {% endif %}
+  </article>
+</section>
+{% endblock %}
